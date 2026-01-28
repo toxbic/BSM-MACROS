@@ -9,7 +9,9 @@ packages = [
     "opencv-python",
     "numpy",
     "requests",
-    "Pillow"
+    "Pillow",
+    "torch",        # Explicitly adding the AI engine for EasyOCR
+    "torchvision"   # Needed for image processing in the AI engine
 ]
 
 def install(pkg):
