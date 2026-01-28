@@ -1,3 +1,4 @@
+[![demo](https://img.shields.io/discord/1465998742405775393?logo=discord)](https://discord.gg/EQD2Csvp)
 🐝 Bee Swarm Modded Macros
 Welcome to the ultimate Bee Swarm Modded Macros repository.
 
