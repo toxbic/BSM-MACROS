@@ -339,11 +339,34 @@ class BeeMacroGUI(ctk.CTk):
                 matches_found = 0
                 found_list = []
                 wanted_passives = [p for p in self.passives if self.checkboxes[p].get()]
+
+
                 for t in targets:
-                    pattern = r'(?<!white\s)(?<!red\s)(?<!blue\s)\bpollen\b' if t == "pollen" else r'\b' + re.escape(t) + r'\b'
-                    if re.search(pattern, text_found):
-                        matches_found += 1
-                        found_list.append(t)
+                    # Specific fix for the base "Pollen" stat
+                    if t == "pollen":
+                        # This regex ensures 'pollen' is NOT preceded by white, red, blue, or 'from bees'
+                        # It accounts for potential multiple spaces or newlines between words
+                        pattern = r'(?<!white\s)(?<!red\s)(?<!blue\s)(?<!from\sbees\s)\bpollen\b'
+                        if re.search(pattern, text_found):
+                            # Double check: if "pollen" is found, make sure it's not part of the other stats
+                            if not any(x in text_found for x in ["white pollen", "red pollen", "blue pollen", "pollen from bees"]):
+                                matches_found += 1
+                                found_list.append(t)
+                            elif text_found.count("pollen") > (("white pollen" in text_found) + ("red pollen" in text_found) + ("blue pollen" in text_found) + ("pollen from bees" in text_found)):
+                                # If 'pollen' appears more times than the specific colored variants, 
+                                # then the base 'pollen' stat must also be present.
+                                matches_found += 1
+                                found_list.append(t)
+                    else:
+                        # Standard matching for everything else
+                        pattern = r'\b' + re.escape(t) + r'\b'
+                        if re.search(pattern, text_found):
+                            matches_found += 1
+                            found_list.append(t)
+
+
+
+
                 self.log(f"FOUND: {found_list}, {matches_found}/{required_count}")
                 all_passives_hit = all(p.lower() in text_found for p in wanted_passives)
                 if all_passives_hit and (matches_found >= required_count or (self.config["stop_at_6"] and matches_found >= 6)):
