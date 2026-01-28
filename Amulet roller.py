@@ -10,17 +10,21 @@ import json
 import os
 import requests
 import io
+import math
 from PIL import Image
 import re  # for whole-word matching
 import webbrowser
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 
+# Make pydirectinput faster (no delay between commands, we handle it ourselves)
+pydirectinput.PAUSE = 0
 
 class BeeMacroGUI(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("BSM AMULET ROLLER By Toxbic")
+        self.title("BSM AMULET ROLLER By Toxbic & AI")
         self.geometry("500x800")
         self.attributes('-topmost', True)
 
@@ -61,6 +65,29 @@ class BeeMacroGUI(ctk.CTk):
         self.load_config()
         self.setup_ui()
 
+    # ---------------- SMOOTH MOUSE LOGIC ----------------
+    def smooth_move(self, target_x, target_y, duration=0.3):
+        """Moves the mouse smoothly from A to B"""
+        if not self.running: return
+        start_x, start_y = pydirectinput.position()
+        steps = 20
+        for i in range(steps + 1):
+            t = i / steps
+            # Smooth interpolation (ease in/out)
+            f = -(math.cos(math.pi * t) - 1) / 2
+            curr_x = int(start_x + (target_x - start_x) * f)
+            curr_y = int(start_y + (target_y - start_y) * f)
+            pydirectinput.moveTo(curr_x, curr_y)
+            time.sleep(duration / steps)
+
+    def action_smooth(self, x, y, post_pause=0.8):
+        """Executes smooth movement and then clicks"""
+        if not self.running: return
+        self.smooth_move(x, y)
+        time.sleep(0.1)
+        pydirectinput.click()
+        time.sleep(post_pause)
+
     # ---------------- CONFIG ----------------
     def load_config(self):
         if os.path.exists(CONFIG_FILE):
@@ -75,17 +102,16 @@ class BeeMacroGUI(ctk.CTk):
         self.config["default_webhook"] = self.default_webhook_entry.get()
         self.config["stop_at_6"] = self.stop6_checkbox.get()
 
-        # Save delays from entries
         for key, entry in self.delay_entries.items():
             try:
                 self.config[key] = float(entry.get())
             except ValueError:
-                pass  # Keep old value if invalid input
+                pass
 
         with open(CONFIG_FILE, "w") as f:
             json.dump(self.config, f, indent=4)
 
-    # ---------------- UI ----------------
+    # ---------------- UI SETUP ----------------
     def setup_ui(self):
         self.tabview = ctk.CTkTabview(self)
         self.tabview.pack(padx=10, pady=10, fill="both", expand=True)
@@ -124,7 +150,7 @@ class BeeMacroGUI(ctk.CTk):
         self.log_box.pack(pady=10, padx=10, fill="both")
 
         # ---- STATS TAB ----
-        self.scroll_frame = ctk.CTkScrollableFrame(self.tab_stats, label_text="Select Wanted Stats")
+        self.scroll_frame = ctk.CTkScrollableFrame(self.tab_stats, label_text="Select Desired Stats")
         self.scroll_frame.pack(pady=5, padx=5, fill="both", expand=True)
 
         ctk.CTkLabel(self.scroll_frame, text="--- PASSIVES ---", font=("Arial", 12, "bold"), text_color="#3498db").pack(pady=5)
@@ -142,7 +168,7 @@ class BeeMacroGUI(ctk.CTk):
             self.checkboxes[display_name] = cb
 
         # ---- SETTINGS TAB ----
-        self.stop6_checkbox = ctk.CTkCheckBox(self.tab_settings, text="Stop macro at 6/7")
+        self.stop6_checkbox = ctk.CTkCheckBox(self.tab_settings, text="Stop macro at 6/7 stats")
         self.stop6_checkbox.pack(pady=10)
         if self.config.get("stop_at_6"): self.stop6_checkbox.select()
 
@@ -186,15 +212,15 @@ class BeeMacroGUI(ctk.CTk):
         pos = pyautogui.position()
         self.config["yes_pos"] = [pos.x, pos.y]
         self.save_config()
-        self.log(f"Yes Position Set: {pos.x}, {pos.y}")
+        self.log(f"Yes Position Saved: {pos.x}, {pos.y}")
 
     def set_scan_region(self):
-        self.log("Click Top-Left of stats in 3s...")
+        self.log("Click Top-Left of the stats in 3s...")
         self.after(3000, self._step_2_region)
 
     def _step_2_region(self):
         self.p1 = pyautogui.position()
-        self.log("Click Bottom-Right of stats in 3s...")
+        self.log("Click Bottom-Right of the stats in 3s...")
         self.after(3000, self._finish_region)
 
     def _finish_region(self):
@@ -208,11 +234,11 @@ class BeeMacroGUI(ctk.CTk):
         ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(250, 120))
         self.image_label.configure(image=ctk_img, text="")
 
-    # ---------------- WEBHOOK ----------------
+    # ---------------- WEBHOOK LOGIC ----------------
     def send_webhook(self, matches, required, img_np, found_stats):
         url = self.config["default_webhook"]
         if not url or "discord.com" not in url:
-            self.log("Webhook Error: Geen geldige URL.")
+            self.log("Webhook Error: No valid URL.")
             return
 
         try:
@@ -222,37 +248,37 @@ class BeeMacroGUI(ctk.CTk):
             buffer.seek(0)
 
             data = {
-                "content": "🐝 **BSS MACRO HIT!** @everyone",
+                "content": "🐝 **BSS AMULET HIT!** @everyone",
                 "embeds": [{
                     "title": "Amulet FOUND!",
-                    "description": f"Stats: **{matches}/{required}**\nRolls: **{self.config['total_rolls']}**\n\n**Gevonden Stats:**\n{', '.join(found_stats)}",
+                    "description": f"Stats: **{matches}/{required}**\nRolls: **{self.config['total_rolls']}**\n\n**Stats Found:**\n{', '.join(found_stats)}",
                     "color": 0x00ff99,
-                    "footer": {"text": "BSM AMULET ROLLER, https://discord.gg/s9jSwPYv"}
+                    "footer": {"text": "BSM AMULET ROLLER"}
                 }]
             }
 
             files = {"file": ("amulet.png", buffer, "image/png")}
             response = requests.post(url, data={"payload_json": json.dumps(data)}, files=files)
             if response.status_code in [200, 204]:
-                self.log("Webhook succesvol verzonden!")
+                self.log("Webhook sent successfully!")
             else:
                 self.log(f"Webhook Error: {response.status_code}")
         except Exception as e:
-            self.log(f"Webhook fout: {e}")
+            self.log(f"Webhook failed: {e}")
 
     def test_webhook(self):
         self.save_config()
         url = self.config["default_webhook"]
         if not url:
-            self.log("Vul eerst een webhook URL in!")
+            self.log("Please enter a webhook URL first!")
             return
         try:
-            requests.post(url, json={"content": "✅ Webhook test succesvol!"})
-            self.log("Testbericht verzonden naar Discord.")
+            requests.post(url, json={"content": "✅ Webhook test successful!"})
+            self.log("Test message sent to Discord.")
         except Exception as e:
-            self.log(f"Test mislukt: {e}")
+            self.log(f"Test failed: {e}")
 
-    # ---------------- MACRO ----------------
+    # ---------------- MACRO LOOP ----------------
     def macro_loop(self):
         targets = []
         for name in self.config["selected_stats"]:
@@ -263,23 +289,26 @@ class BeeMacroGUI(ctk.CTk):
 
         required_count = len(targets)
         if required_count == 0:
-            self.log("ERROR: Geen stats geselecteerd!")
+            self.log("ERROR: No stats selected!")
             self.running = False
             return
 
-        self.log(f"Zoeken naar {required_count} stats...")
+        self.log(f"Macro started. Searching for {required_count} stats...")
 
         while self.running:
             self.config["total_rolls"] += 1
             self.roll_label.configure(text=f"Rolls: {self.config['total_rolls']}")
 
+            # 1. Press E
             pydirectinput.press('e')
             time.sleep(self.config.get("delay_after_e_press", 1.0))
 
+            # 2. SMOOTH MOUSE MOVEMENT TO 'YES'
             time.sleep(self.config.get("delay_before_click_yes", 2.5))
-            pydirectinput.click(self.config["yes_pos"][0], self.config["yes_pos"][1])
-            time.sleep(self.config.get("delay_after_click", 2.5))
+            self.action_smooth(self.config["yes_pos"][0], self.config["yes_pos"][1], 
+                               post_pause=self.config.get("delay_after_click", 2.5))
 
+            # 3. SCAN AMULET
             try:
                 ss = pyautogui.screenshot(region=self.config["scan_region"])
                 img_np = np.array(ss)
@@ -290,21 +319,13 @@ class BeeMacroGUI(ctk.CTk):
                 text_found = " ".join(result).lower()
 
                 matches_found = 0
-                found_stats = []
-                found_list = []
-# --- VERBETERDE MATCHING LOGICA ---
-                matches_found = 0
-                found_list = []
-# --- VERBETERDE MATCHING LOGICA MET VERPLICHTE PASSIVES ---
-                matches_found = 0
                 found_list = []
                 
-                # We maken een lijstje van welke passives je ECHT wilde hebben
+                # Check selected passives
                 wanted_passives = [p for p in self.passives if self.checkboxes[p].get()]
                 
                 for t in targets:
                     if t == "pollen":
-                        # Je 'Pollen' fix van net
                         pattern = r'(?<!white\s)(?<!red\s)(?<!blue\s)\bpollen\b'
                     else:
                         pattern = r'\b' + re.escape(t) + r'\b'
@@ -313,21 +334,18 @@ class BeeMacroGUI(ctk.CTk):
                         matches_found += 1
                         found_list.append(t)
 
-                # CHECK: Zitten alle geselecteerde passives in de gevonden lijst?
-                all_passives_hit = all(p.lower() in found_list for p in wanted_passives)
+                # Check if all passives are present
+                all_passives_hit = all(p.lower() in text_found for p in wanted_passives)
 
-                self.log(f"Match: {matches_found}/{required_count}, FOUND: {found_list}")
+                self.log(f"Found:  {matches_found}/{required_count} : {found_list} stats. Passives OK: {all_passives_hit}")
 
-                # De macro stopt nu pas als de passives erbij zitten EN het aantal klopt
-                if all_passives_hit and (matches_found >= required_count or (self.config["stop_at_6"] and matches_found >= 6) or matches_found==7):
-                    self.log("TARGET BEREIKT! (Passives + Stats OK)")
+                if all_passives_hit and (matches_found >= required_count or (self.config["stop_at_6"] and matches_found >= 6)):
+                    self.log("TARGET REACHED! Macro stopping.")
                     self.send_webhook(matches_found, required_count, img_np, found_list)
                     self.running = False
                     import winsound
                     winsound.Beep(1200, 2500)
                     break
-                elif not all_passives_hit and matches_found >= 6:
-                    self.log("Skip: enough stats, but missing Passive.")
 
             except Exception as e:
                 self.log(f"OCR Error: {e}")
@@ -344,7 +362,6 @@ class BeeMacroGUI(ctk.CTk):
     def stop_macro(self):
         self.running = False
         self.log("Macro Stopped.")
-
 
 if __name__ == "__main__":
     app = BeeMacroGUI()
