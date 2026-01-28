@@ -210,7 +210,7 @@ class RoboBearDefinitive(ctk.CTk):
             # --- DIT IS DE INNER LOOP ---
             # Deze loop blijft bij de beer zolang je in searching_mode zit
             while self.running:
-                searching_mode = (self.round_counter >= 20)
+                searching_mode = (self.round_counter >= 10)
 
                 # A. Menu openen (Fixed clicks)
                 if self.running:
@@ -265,7 +265,7 @@ class RoboBearDefinitive(ctk.CTk):
                     self.action_smooth(1094, 827, post_pause=0.8) 
 
                 # E. SKIP LOGIC: Moeten we resetten en opnieuw?
-                if self.running and self.round_counter >=20:
+                if self.running and self.round_counter >=10:
                     self.log("Resetting via UI clicks...")
                     self.action_smooth(1855, 601, post_pause=0.5)
                     self.action_smooth(841, 587, post_pause=0.5)
@@ -283,7 +283,7 @@ class RoboBearDefinitive(ctk.CTk):
 
 
             # 2. SHOPPEN EN LOPEN (gebeurt alleen als searching_mode klaar of uit is)
-            if self.running and not (self.round_counter >= 20):
+            if self.running and not (self.round_counter >= 10):
                 self.log('ACTIVATED')
                 self.use_drives()
                 self.walk_to_drive_reversed()
