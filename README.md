@@ -1,5 +1,3 @@
-[![demo](https://img.shields.io/discord/1465998742405775393?logo=discord)](https://discord.gg/EQD2Csvp)
-
 
 
 <p align="center"> <a href="https://discord.gg/EQD2Csvp"> <img src="https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Discord Shield"> </a> <img src="https://img.shields.io/badge/Version-1.2.0-gold?style=for-the-badge" alt="Version"> <img src="https://img.shields.io/badge/Python-3.14-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python Version"> </p>
