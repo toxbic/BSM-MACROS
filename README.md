@@ -21,7 +21,7 @@ This project requires Python 3.14.
 Clone the repository:
 
 Bash
-git clone https://github.com/YourUsername/BSS-Modded-Macros.git
+git clone https://github.com/toxbic/BSS-Modded-Macros.git
 cd BSS-Modded-Macros
 Install Dependencies: Run the custom requirement installer to set up the necessary environment:
 
