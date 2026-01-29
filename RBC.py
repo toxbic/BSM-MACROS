@@ -18,7 +18,7 @@ class RoboBearDefinitive(ctk.CTk):
         self.running = False
         self.digital_bee = 0
         self.round_counter = 0  # Track rounds
-        
+        self.drives_bought = 0
         # YOUR EXACT LIST
         self.fixed_clicks = [
             (1004, 142), (933, 748), (933, 748),
@@ -53,7 +53,7 @@ class RoboBearDefinitive(ctk.CTk):
         
         self.buy_glitched = ctk.CTkCheckBox(selection_frame, text="Glitched", fg_color="#9b59b6")
         self.buy_glitched.pack(pady=2); self.buy_glitched.select()
-
+        
         self.log_box = ctk.CTkTextbox(self, height=200)
         self.log_box.pack(pady=10, padx=20, fill="both")
 
@@ -115,29 +115,8 @@ class RoboBearDefinitive(ctk.CTk):
         pydirectinput.keyDown('e'); time.sleep(1); pydirectinput.keyUp('e')
 
     def buy_4_different_drives(self):
-        drive_selection = [
-            ("Red", self.buy_red.get()), ("White", self.buy_white.get()),
-            ("Blue", self.buy_blue.get()), ("Glitched", self.buy_glitched.get())
-        ]
-        items_bought = 0
-        self.log("Round 1: Priority buying...")
-        for i, (name, active) in enumerate(drive_selection):
-            if not self.running: return
-            if active:
-                self.action_smooth(self.drive_buy_xy[0], self.drive_buy_xy[1], post_pause=0.4)
-                items_bought += 1
-            self.action_smooth(self.drive_next_xy[0], self.drive_next_xy[1], post_pause=0.3)
-        self.action_smooth(self.drive_next_xy[0], self.drive_next_xy[1], post_pause=0.3)
-        if items_bought < 4 and self.running:
-            for i, (name, active) in enumerate(drive_selection):
-                if items_bought >= 4 or not self.running: break
-                if not active:
-                    self.action_smooth(self.drive_buy_xy[0], self.drive_buy_xy[1], post_pause=0.4)
-                    items_bought += 1
-                self.action_smooth(self.drive_next_xy[0], self.drive_next_xy[1], post_pause=0.3)
-        self.log("Done shopping. Closing...")
-        pydirectinput.keyDown('e'); time.sleep(3); pydirectinput.keyUp('e')
 
+        self.drives_bought = self.drives_bought +1
         time.sleep(1)
         self.action_smooth(1855, 601, post_pause=0.5)
         self.action_smooth(841, 587, post_pause=0.5)
@@ -219,7 +198,7 @@ class RoboBearDefinitive(ctk.CTk):
                 
                 # B. Scannen en refreshen
                 if self.running and searching_mode:
-                    for i in range(6):
+                    for i in range(3):
                         if not self.running: break
                         
                         # We slaan de resultaten van de scan op in 'coords'
@@ -237,7 +216,7 @@ class RoboBearDefinitive(ctk.CTk):
                             break
                            
                         else:
-                            if i < 5:
+                            if i < 2:
                                 self.log(f"Refreshing... ({i+1}/5)")
                                 self.action_smooth(814, 827, post_pause=0.6)
                 
@@ -284,7 +263,7 @@ class RoboBearDefinitive(ctk.CTk):
 
             # 2. SHOPPEN EN LOPEN (gebeurt alleen als searching_mode klaar of uit is)
             if self.running and not (self.round_counter >= 10):
-                self.log('ACTIVATED')
+                self.log(self.drives_bought)
                 self.use_drives()
                 self.walk_to_drive_reversed()
                 self.buy_4_different_drives()
