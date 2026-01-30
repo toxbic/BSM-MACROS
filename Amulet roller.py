@@ -85,7 +85,7 @@ class BeeMacroGUI(ctk.CTk):
             "White Pollen": "white pollen",
             "Red Pollen": "red pollen",
             "Blue Pollen": "blue pollen",
-            "pollen from bees": "pollen from bees",
+            "Bee Gather Pollen" : "Bee Gather Pollen",
             "Instant Conversion": "instant conversion",
             "Convert Rate": "convert rate",
             "Bee Ability Rate": "ability rate",
@@ -393,3 +393,4 @@ class BeeMacroGUI(ctk.CTk):
 if __name__ == "__main__":
     app = BeeMacroGUI()
     app.mainloop()
+
