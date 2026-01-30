@@ -247,7 +247,7 @@ class RoboBearDefinitive(ctk.CTk):
         pydirectinput.keyDown('space'); time.sleep(0.1); pydirectinput.keyUp('space')
         pydirectinput.keyDown('d'); time.sleep(0.3); pydirectinput.keyUp('d')
         time.sleep(1)
-        pydirectinput.keyDown('e'); time.sleep(1); pydirectinput.keyUp('e')
+
 
     def buy_4_different_drives(self):
         self.drives_bought += 1
@@ -257,7 +257,6 @@ class RoboBearDefinitive(ctk.CTk):
 
 
         time.sleep(1)
-        pydirectinput.keyDown('e'); time.sleep(1); pydirectinput.keyUp('e')
         pydirectinput.keyDown('e'); time.sleep(1); pydirectinput.keyUp('e')
         drive_selection = [
             ("Red", self.buy_red.get()), ("White", self.buy_white.get()),
@@ -317,7 +316,7 @@ class RoboBearDefinitive(ctk.CTk):
             self.walk_to_bear_original()
 
             while self.running:
-                searching_mode = (self.round_counter >= 10)
+                searching_mode = (self.round_counter >= 20)
 
                 if self.running:
                     for pos in self.fixed_clicks:
@@ -344,23 +343,27 @@ class RoboBearDefinitive(ctk.CTk):
                     self.log("scanning 2  bees...")
                     
 
-                    if self.digital_bee == 0:
+                    if 1==1:
                         bx, by = self.scan_bee()
                         if bx > 0:
+                            self.log("Digital Bee detected! Clicking now...")
                             self.action_smooth(bx, by, post_pause=0.5)
                             self.digital_bee = 1
                         else:
                             self.action_smooth(self.pos_bee2[0], self.pos_bee2[1], post_pause=0.5)
                     if self.digital_bee == 0:
+                     if 1==1:
                         bx, by = self.scan_bee()
                         if bx > 0:
+                            self.log("Digital Bee detected! Clicking now...")
                             self.action_smooth(bx, by, post_pause=0.5)
                             self.digital_bee = 1
                         else:
                             self.action_smooth(self.pos_bee2[0], self.pos_bee2[1], post_pause=0.5)
+                    time.sleep(1)
                     self.action_smooth(self.pos_accept[0], self.pos_accept[1], post_pause=0.8)
 
-                if self.running and self.round_counter >= 10:
+                if self.running and self.round_counter >= 20:
                     self.log("Resetting via UI clicks...")
                     self.action_smooth(self.pos_exit[0], self.pos_exit[1], post_pause=0.5)
                     self.action_smooth(self.pos_confirm[0], self.pos_confirm[1], post_pause=0.5)
@@ -372,7 +375,7 @@ class RoboBearDefinitive(ctk.CTk):
 
                 break
 
-            if self.running and self.round_counter < 10:
+            if self.running and self.round_counter < 20:
                 self.log(f"Drives bought so far: {self.drives_bought}")
                 self.use_drives()
                 self.walk_to_drive_reversed()
