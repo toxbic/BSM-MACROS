@@ -11,7 +11,8 @@ packages = [
     "requests",
     "Pillow",
     "torch",        # Explicitly adding the AI engine for EasyOCR
-    "torchvision"   # Needed for image processing in the AI engine
+    "torchvision",
+    "keyboard"# Needed for image processing in the AI engine
 ]
 
 def install(pkg):
@@ -27,3 +28,4 @@ if __name__ == "__main__":
             print(f"✗ Failed to install {p}: {e}")
 
     print("\nAll done!")
+
