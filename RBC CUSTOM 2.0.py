@@ -18,7 +18,7 @@ class RoboBearDefinitive(ctk.CTk):
         self.reader = easyocr.Reader(['en'])
         self.running = False
         self.digital_bee = 0
-        self.round_counter = 0
+        self.round_counter = 20
         self.drives_bought = 0
 
         # Configurable positions (same defaults as original)
@@ -321,6 +321,7 @@ class RoboBearDefinitive(ctk.CTk):
                 if self.running:
                     for pos in self.fixed_clicks:
                         self.action_smooth(pos[0], pos[1], post_pause=0.3)
+                        time.sleep(1)
 
                 if self.running and searching_mode:
                     for i in range(3):
@@ -386,4 +387,4 @@ class RoboBearDefinitive(ctk.CTk):
 
 if __name__ == "__main__":
     app = RoboBearDefinitive()
-    app.mainloop()
+    app.mainloop()  
