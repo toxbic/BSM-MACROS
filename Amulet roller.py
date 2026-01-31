@@ -111,7 +111,47 @@ def ocr_process(img):
         print(f"EasyOCR error: {e}")
         return ""
     return full_text
+def run_validator_stress_test(gui_data, log_func):
+    global running
+    running = True
+    log_func("STARTING STRESS TEST: Hunting for all 8 passives and 10 stats...")
 
+    todo_passives = set(["Pop Star", "Guiding Star", "Star Shower", "Gummy Star", "Scorching Star", "Star Saw"])
+    todo_stats = set(["Pollen (8 - 20)", "White Pollen (15 - 70)", "Blue Pollen (15 - 70)", "Red Pollen (15 - 70)", 
+                      "Bee Gather Pollen (15 - 70)", "Instant Conversion (5 - 12)", "Convert Rate (1.05 - 1.25)", 
+                      "Bee Ability Rate (2 - 7)", "Critical Chance (2 - 7)", "Capacity (1.5 - 2.5)"])
+
+    rolls = 0
+    while running and (todo_passives or todo_stats):
+        # Rollen (gebruik de 10B button voor snelheid/kosten)
+        pydirectinput.press('e')
+        time.sleep(0.5)
+        wiggle_click(gui_data['btn_no']) 
+        time.sleep(0.8)
+
+        # Scan
+        img = get_stats_image_dynamic(gui_data['scan_rect'])
+        raw = ocr_process(img)
+        p_found, s_found = parse_stats(raw)
+        rolls += 1
+
+        # Afstrepen
+        for p in p_found:
+            if p in todo_passives:
+                todo_passives.remove(p)
+                log_func(f"FOUND PASSIVE: {p} ({len(todo_passives)} left)")
+        
+        for s in s_found.keys():
+            if s in todo_stats:
+                todo_stats.remove(s)
+                log_func(f"FOUND STAT: {s} ({len(todo_stats)} left)")
+
+        if rolls % 5 == 0:
+            log_func(f"Roll {rolls}... Still looking for {len(todo_passives)} passives and {len(todo_stats)} stats.")
+
+    log_func(f"STRESS TEST COMPLETE! Found everything in {rolls} rolls.")
+    running = False
+gevonden = []
 def parse_stats(text):
     passives = []
     stats = {}
@@ -127,14 +167,14 @@ def parse_stats(text):
         "Gummy Star": ["gummy"],
         "Scorching Star": ["scorch"], # Using partial 'scorch' to catch misreads
         "Star Saw": ["saw"],
-        "Soul Star": ["soul"],
-        "Tidal Star": ["tidal"],
+ 
     }
 
     for name, keywords in passive_rules.items():
         if all(kw in clean_blob for kw in keywords):
             if name not in passives:
                 passives.append(name)
+                
 
     # 2. Fix line breaks in stats
     fixed_text = text.replace("Bee\nAbility", "Bee Ability")
@@ -200,7 +240,16 @@ def parse_stats(text):
                 
             except ValueError:
                 continue
-
+    for i in passives:
+     if i not in gevonden:
+        gevonden.append(i)
+    for i in stats:
+     if i not in gevonden:
+         gevonden.append(i)
+    if len(gevonden) > 14:
+        #print('ALLES GEVONDEN',gevonden)
+        pass
+    
     return sorted(list(set(passives))), stats
 def format_time(seconds):
     if seconds is None or seconds == float('inf') or seconds == 0:
@@ -656,7 +705,8 @@ class MacroGUI:
         keyboard.add_hotkey('f1', self.validate_and_start)
         keyboard.add_hotkey('f2', self.stop_thread)
         keyboard.add_hotkey('f3', self.start_test_thread)
-
+        # F4 start de validator stress test
+        
         self.load_config()
         if not self.amulets:
             self.add_amulet()
