@@ -2,6 +2,7 @@
 
 <p align="center"> <a href="https://discord.gg/EQD2Csvp"> <img src="https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Discord Shield"> 
 
+![Profile Views](https://komarev.com/ghpvc/?username=YOUR_USERNAME)
 
 🐝 Bee Swarm Modded Macros
 Welcome to the ultimate Bee Swarm Modded Macros repository.
