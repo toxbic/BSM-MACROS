@@ -140,7 +140,8 @@ def parse_stats(text):
     fixed_text = text.replace("Bee\nAbility", "Bee Ability")
     fixed_text = fixed_text.replace("Instant\nConversion", "Instant Conversion")
     fixed_text = fixed_text.replace("Gather\nPollen", "Gather Pollen")
-    
+
+    fixed_text = fixed_text.replace("XL", "x1").replace("XI", "x1").replace("X1", "x1").replace("Xl", "x1") 
     processed_lines = []
     current_line = ''
     for line in fixed_text.splitlines():
@@ -183,9 +184,13 @@ def parse_stats(text):
 # Improved Convert Rate detection (handles the 'I' misread)
                 elif "convert" in desc_clean: stats["Convert Rate (1.05 - 1.25)"] = val
                 # --- NEW CONVERT RATE LOGIC ---
-                elif "convertrate" in desc_clean:
+                elif "convert" in desc_clean:
+                    # Als de OCR de punt mist en '11' of '12' leest ipv '1.1'
+                    if val > 5: 
+                        val = val / 10
+                    # Zorg dat het altijd in de range 1.05 - 1.25 valt
+                    val = max(1.05, min(val, 1.25))
                     stats["Convert Rate (1.05 - 1.25)"] = val
-                
                 elif "pollen" in desc_clean: 
                     stats["Pollen (8 - 20)"] = val
                 elif "abilityrate" in desc_clean: stats["Bee Ability Rate (2 - 7)"] = val
