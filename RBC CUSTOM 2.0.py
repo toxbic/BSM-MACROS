@@ -8,6 +8,8 @@ import math
 import webbrowser
 from PIL import ImageGrab
 import keyboard  # ← added for hotkeys
+import json
+import os
 
 # Set a tiny pause to prevent "doubled" inputs, but keep it fast
 pydirectinput.PAUSE = 0.01 
@@ -24,7 +26,8 @@ class RoboBearDefinitive(ctk.CTk):
         # Configurable positions (same defaults as original)
         self.pos_menu_open   = (1004, 142)
         self.pos_menu_select = (933, 748)
-        self.pos_menu_start  = (1083, 459)
+        self.pos_menu_start  = (0, 0)
+        self.pos_quest_a = (1083,459)
         self.pos_drive_buy   = (897, 836)
         self.pos_drive_next  = (1106, 820)
         self.pos_refresh     = (814, 827)
@@ -35,8 +38,12 @@ class RoboBearDefinitive(ctk.CTk):
         self.pos_confirm     = (841, 587)
         self.scan_region     = (632, 351, 625, 326)
 
-        self.fixed_clicks = [self.pos_menu_open] + [self.pos_menu_select] * 5 + [self.pos_menu_start]
+       
         
+        # Config file for saving positions
+        self.config_file = "rb_macro_positions.json"
+        self.load_config()
+
         self.setup_ui()
         self.bind_hotkeys()
 
@@ -101,6 +108,7 @@ class RoboBearDefinitive(ctk.CTk):
         self.create_config_entry(scroll_frame, "Menu Open",   self.pos_menu_open)
         self.create_config_entry(scroll_frame, "Menu Select", self.pos_menu_select)
         self.create_config_entry(scroll_frame, "Menu Start",  self.pos_menu_start)
+        self.create_config_entry(scroll_frame, "Quest A", self.pos_quest_a)
         self.create_config_entry(scroll_frame, "Drive Buy",   self.pos_drive_buy)
         self.create_config_entry(scroll_frame, "Drive Next",  self.pos_drive_next)
         self.create_config_entry(scroll_frame, "Refresh",     self.pos_refresh)
@@ -173,6 +181,7 @@ class RoboBearDefinitive(ctk.CTk):
             self.pos_menu_open   = (int(self.config_entries["Menu Open"][0].get()),   int(self.config_entries["Menu Open"][1].get()))
             self.pos_menu_select = (int(self.config_entries["Menu Select"][0].get()), int(self.config_entries["Menu Select"][1].get()))
             self.pos_menu_start  = (int(self.config_entries["Menu Start"][0].get()),  int(self.config_entries["Menu Start"][1].get()))
+            self.pos_quest_a     = (int(self.config_entries["Quest A"][0].get()),     int(self.config_entries["Quest A"][1].get()))
             self.pos_drive_buy   = (int(self.config_entries["Drive Buy"][0].get()),   int(self.config_entries["Drive Buy"][1].get()))
             self.pos_drive_next  = (int(self.config_entries["Drive Next"][0].get()),  int(self.config_entries["Drive Next"][1].get()))
             self.pos_refresh     = (int(self.config_entries["Refresh"][0].get()),     int(self.config_entries["Refresh"][1].get()))
@@ -189,16 +198,87 @@ class RoboBearDefinitive(ctk.CTk):
                 int(self.entry_scan_height.get())
             )
 
-            self.fixed_clicks = [self.pos_menu_open] + [self.pos_menu_select] * 5 + [self.pos_menu_start]
+            self.fixed_clicks = [self.pos_menu_open] + [self.pos_menu_select] * 5 + [self.pos_menu_start] + [self.pos_quest_a]
             self.log("All positions updated.")
+            self.save_config()  # ← added: save to JSON after applying changes
+
         except:
             self.log("Error: invalid number in one or more fields.")
 
-    # ── The rest is EXACTLY the same as your previous version ──
+    def save_config(self):
+        config = {
+            "menu_open":   list(self.pos_menu_open),
+            "menu_select": list(self.pos_menu_select),
+            "menu_start":  list(self.pos_menu_start),
+            "quest_a":     list(self.pos_quest_a),
+            "drive_buy":   list(self.pos_drive_buy),
+            "drive_next":  list(self.pos_drive_next),
+            "refresh":     list(self.pos_refresh),
+            "bee1":        list(self.pos_bee1),
+            "bee2":        list(self.pos_bee2),
+            "accept":      list(self.pos_accept),
+            "exit":        list(self.pos_exit),
+            "confirm":     list(self.pos_confirm),
+            "scan_region": list(self.scan_region),
+        }
+        try:
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+            self.log("Positions saved to rb_macro_positions.json")
+        except Exception as e:
+            self.log(f"Failed to save config: {e}")
 
+    def load_config(self):
+        if not os.path.exists(self.config_file):
+            self.log("No saved config found → using defaults")
+            return
+
+        try:
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+
+            def get_pos(key, default):
+                val = config.get(key)
+                if isinstance(val, list) and len(val) == 2:
+                    return tuple(val)
+                return default
+
+            self.pos_menu_open   = get_pos("menu_open",   self.pos_menu_open)
+            self.pos_menu_select = get_pos("menu_select", self.pos_menu_select)
+            self.pos_menu_start  = get_pos("menu_start",  self.pos_menu_start)
+            self.pos_quest_a     = get_pos("quest_a",     self.pos_quest_a)
+            self.pos_drive_buy   = get_pos("drive_buy",   self.pos_drive_buy)
+            self.pos_drive_next  = get_pos("drive_next",  self.pos_drive_next)
+            self.pos_refresh     = get_pos("refresh",     self.pos_refresh)
+            self.pos_bee1        = get_pos("bee1",        self.pos_bee1)
+            self.pos_bee2        = get_pos("bee2",        self.pos_bee2)
+            self.pos_accept      = get_pos("accept",      self.pos_accept)
+            self.pos_exit        = get_pos("exit",        self.pos_exit)
+            self.pos_confirm     = get_pos("confirm",     self.pos_confirm)
+
+            scan = config.get("scan_region")
+            if isinstance(scan, list) and len(scan) == 4:
+                self.scan_region = tuple(scan)
+
+            # Rebuild fixed_clicks with loaded values
+            self.fixed_clicks = [
+                self.pos_menu_open,
+                *[self.pos_menu_select] * 5,
+                self.pos_menu_start,
+                self.pos_quest_a
+            ]
+
+            self.log("Loaded positions from rb_macro_positions.json")
+            self.log(f"Quest A loaded as: {self.pos_quest_a}")
+
+        except Exception as e:
+            self.log(f"Failed to load config: {e} → using defaults")
     def log(self, msg):
-        self.log_box.insert("end", f"> {msg}\n")
-        self.log_box.see("end")
+        if hasattr(self, 'log_box') and self.log_box is not None:
+            self.log_box.insert("end", f"> {msg}\n")
+            self.log_box.see("end")
+        else:
+            print(f"> {msg}")   # fallback to console during early init
 
     def open_discord(self):
         webbrowser.open("https://discord.gg/s9jSwPYv")
@@ -248,13 +328,40 @@ class RoboBearDefinitive(ctk.CTk):
         pydirectinput.keyDown('d'); time.sleep(0.3); pydirectinput.keyUp('d')
         time.sleep(1)
 
-
     def buy_4_different_drives(self):
-        self.drives_bought += 1
+
+
+
+        pydirectinput.keyDown('e'); time.sleep(1); pydirectinput.keyUp('e')
+        drive_selection = [
+            ("Red", self.buy_red.get()), ("White", self.buy_white.get()),
+            ("Blue", self.buy_blue.get()), ("Glitched", self.buy_glitched.get())
+        ]
+        items_bought = 0
+        self.log("Round 1: Priority buying...")
+        for name, active in drive_selection:
+            if not self.running: return
+            if active:
+                self.action_smooth(self.pos_drive_buy[0], self.pos_drive_buy[1], post_pause=0.4)
+                items_bought += 1
+            self.action_smooth(self.pos_drive_next[0], self.pos_drive_next[1], post_pause=0.3)
+        self.action_smooth(self.pos_drive_next[0], self.pos_drive_next[1], post_pause=0.3)
+
+        if items_bought < 4 and self.running:
+            for name, active in drive_selection:
+                if items_bought >= 4 or not self.running: break
+                if not active:
+                    self.action_smooth(self.pos_drive_buy[0], self.pos_drive_buy[1], post_pause=0.4)
+                    items_bought += 1
+                self.action_smooth(self.pos_drive_next[0], self.pos_drive_next[1], post_pause=0.3)
+
+        pydirectinput.keyDown('e'); time.sleep(1); pydirectinput.keyUp('e')
+
+        self.drives_bought += 2
         time.sleep(1)
+        # ENDER
         self.action_smooth(self.pos_exit[0], self.pos_exit[1], post_pause=0.5)
         self.action_smooth(self.pos_confirm[0], self.pos_confirm[1], post_pause=0.5)
-
 
         time.sleep(1)
         pydirectinput.keyDown('e'); time.sleep(1); pydirectinput.keyUp('e')
@@ -313,16 +420,23 @@ class RoboBearDefinitive(ctk.CTk):
         time.sleep(3)
         
         while self.running:
+            self.fixed_clicks = [self.pos_menu_open] + [self.pos_menu_select] * 3+ [self.pos_menu_start] *2+[self.pos_quest_a]
+            self.digital_bee = 0
             self.walk_to_bear_original()
-
+            
             while self.running:
+                self.log(f"Quest A position used = {self.pos_quest_a}")
+                self.log(f"[DEBUG] fixed_clicks contents = {self.fixed_clicks}")   # ← this will show ALL positions being used
                 searching_mode = (self.round_counter >= 20)
 
                 if self.running:
                     for pos in self.fixed_clicks:
+                        self.log(f"Clicking on {pos[0]}:{pos[1]}")
                         self.action_smooth(pos[0], pos[1], post_pause=0.3)
                         time.sleep(1)
-
+                time.sleep(1)
+                self.log(self.pos_quest_a)
+                time.sleep(1)
                 if self.running and searching_mode:
                     for i in range(3):
                         if not self.running: break
@@ -330,7 +444,7 @@ class RoboBearDefinitive(ctk.CTk):
                         if bx > 0:
                             self.log("Digital Bee detected! Clicking now...")
                             self.action_smooth(bx, by, post_pause=0.5)
-                            self.digital_bee = 1
+                            self.digital_bee = 1    
                             self.round_counter = -1
                             break
                         else:
@@ -342,6 +456,7 @@ class RoboBearDefinitive(ctk.CTk):
 
                 if self.running:
                     self.log("scanning 2  bees...")
+                    self.log(self.digital_bee)
                     
 
                     if 1==1:
@@ -352,7 +467,9 @@ class RoboBearDefinitive(ctk.CTk):
                             self.digital_bee = 1
                         else:
                             self.action_smooth(self.pos_bee2[0], self.pos_bee2[1], post_pause=0.5)
+                    self.log('Came before it ')
                     if self.digital_bee == 0:
+                     self.log('came after if self.digital_bee == 0')
                      if 1==1:
                         bx, by = self.scan_bee()
                         if bx > 0:
@@ -365,6 +482,8 @@ class RoboBearDefinitive(ctk.CTk):
                     self.action_smooth(self.pos_accept[0], self.pos_accept[1], post_pause=0.8)
 
                 if self.running and self.round_counter >= 20:
+                 if self.digital_bee == 0:
+                    
                     self.log("Resetting via UI clicks...")
                     self.action_smooth(self.pos_exit[0], self.pos_exit[1], post_pause=0.5)
                     self.action_smooth(self.pos_confirm[0], self.pos_confirm[1], post_pause=0.5)
@@ -387,4 +506,4 @@ class RoboBearDefinitive(ctk.CTk):
 
 if __name__ == "__main__":
     app = RoboBearDefinitive()
-    app.mainloop()  
+    app.mainloop()
