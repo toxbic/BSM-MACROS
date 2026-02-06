@@ -523,7 +523,7 @@ class RoboBearDefinitive(ctk.CTk):
         while self.running:
             self.fixed_clicks = [self.pos_menu_open] + [self.pos_menu_select] * 3+ [self.pos_menu_start] *2+[self.pos_quest_a]
             self.digital_bee = 0
-            #self.walk_to_bear_original()
+            self.walk_to_bear_original()
             
             while self.running:
 
