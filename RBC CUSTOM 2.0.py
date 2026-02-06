@@ -10,6 +10,9 @@ from PIL import ImageGrab
 import keyboard  # ← added for hotkeys
 import json
 import os
+import requests
+from PIL import ImageGrab
+import io
 
 # Set a tiny pause to prevent "doubled" inputs, but keep it fast
 pydirectinput.PAUSE = 0.01 
@@ -22,7 +25,7 @@ class RoboBearDefinitive(ctk.CTk):
         self.digital_bee = 0
         self.round_counter = 0
         self.drives_bought = 0
-
+        self.discord_webhook = ""  
         # Configurable positions (same defaults as original)
         self.pos_menu_open   = (1004, 142)
         self.pos_menu_select = (933, 748)
@@ -46,7 +49,7 @@ class RoboBearDefinitive(ctk.CTk):
 
         self.setup_ui()
         self.bind_hotkeys()
-
+ 
     def bind_hotkeys(self):
         # F6 = start, F7 = stop
         keyboard.add_hotkey('f6', self.start_hotkey)
@@ -60,6 +63,41 @@ class RoboBearDefinitive(ctk.CTk):
     def stop_hotkey(self):
         self.stop()
 
+
+
+
+    def send_screenshot_to_discord(self, filename="screenshot.png"):
+        webhook_url = self.discord_webhook.strip()
+
+        # Fallback only if user didn't set anything
+        if not webhook_url:
+            
+            self.log("please set your own in Discord tab!")
+            return
+
+        screenshot = ImageGrab.grab()
+        
+        buffer = io.BytesIO()
+        screenshot.save(buffer, format="PNG")
+        buffer.seek(0)
+        
+        files = {"file": (filename, buffer, "image/png")}
+        
+        try:
+            response = requests.post(webhook_url, files=files, timeout=6)
+            if response.status_code == 204:
+                self.log("Screenshot sent to Discord")
+                return True
+            else:
+                self.log(f"Discord send failed – status {response.status_code}")
+                return False
+        except Exception as e:
+            self.log(f"Discord webhook error: {str(e)}")
+            return False
+
+
+
+
     def setup_ui(self):
         self.title("RBC Macro - Made by Toxbic")
         self.geometry("500x650")
@@ -70,7 +108,49 @@ class RoboBearDefinitive(ctk.CTk):
 
         main_tab = tabview.add("Main")
         config_tab = tabview.add("XY Config")
+        discord_tab = tabview.add("Discord")
 
+        # ── Discord Tab ─────────────────────────────────────
+        discord_frame = ctk.CTkFrame(discord_tab)
+        discord_frame.pack(pady=20, padx=30, fill="both", expand=True)
+
+        ctk.CTkLabel(
+            discord_frame,
+            text="Custom Discord Webhook",
+            font=("Arial", 18, "bold")
+        ).pack(pady=(20, 10))
+
+        ctk.CTkLabel(
+            discord_frame,
+            text="Paste your webhook URL here.\nScreenshot will be sent when Digital Bee is found.",
+            font=("Arial", 12),
+            wraplength=420,
+            justify="center"
+        ).pack(pady=(0, 20))
+
+        self.entry_webhook = ctk.CTkEntry(
+            discord_frame,
+            width=380,
+            placeholder_text="https://discord.com/api/webhooks/...",
+            show=None   # remove if you want to hide characters
+        )
+        self.entry_webhook.pack(pady=10)
+        self.entry_webhook.insert(0, self.discord_webhook)
+
+        ctk.CTkButton(
+            discord_frame,
+            text="Save Webhook",
+            fg_color="#5865F2",
+            hover_color="#4752C4",
+            command=self.save_webhook
+        ).pack(pady=15)
+
+        ctk.CTkLabel(
+            discord_frame,
+            text="Tip: Create webhook → Server Settings → Integrations → Webhooks",
+            font=("Arial", 10),
+            text_color="gray"
+        ).pack(pady=10)
         # ── Main Tab ────────────────────────────────────────
         ctk.CTkLabel(main_tab, text="ROBO BEAR MACRO By Toxbic", font=("Arial", 20, "bold")).pack(pady=(20, 5))
         
@@ -104,6 +184,10 @@ class RoboBearDefinitive(ctk.CTk):
         scroll_frame = ctk.CTkScrollableFrame(config_tab)
         scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
+        self.entry_webhook.pack(pady=10)
+
+        # ← Move the insert here, AFTER load_config() has run
+        self.entry_webhook.insert(0, self.discord_webhook)
         self.config_entries = {}
         self.create_config_entry(scroll_frame, "Menu Open",   self.pos_menu_open)
         self.create_config_entry(scroll_frame, "Menu Select", self.pos_menu_select)
@@ -146,6 +230,16 @@ class RoboBearDefinitive(ctk.CTk):
         self.log("Move mouse → capturing in 5s...")
         self.after(5000, lambda: self.set_point(ex, ey))
 
+
+
+    def save_webhook(self):
+        webhook = self.entry_webhook.get().strip()
+        if webhook and not webhook.startswith("https://discord.com/api/webhooks/"):
+            self.log("Warning: Doesn't look like a valid Discord webhook URL")
+        
+        self.discord_webhook = webhook
+        self.save_config()           # re-save whole config
+        self.log("Webhook URL updated and saved.")
     def set_point(self, ex, ey):
         x, y = pydirectinput.position()
         ex.delete(0, "end"); ex.insert(0, str(x))
@@ -393,11 +487,15 @@ class RoboBearDefinitive(ctk.CTk):
 
     def use_drives(self):
         if self.digital_bee == 1 and self.running:
+            self.action_smooth(self.pos_exit[0], self.pos_exit[1], post_pause=0.5)
+            self.action_smooth(self.pos_confirm[0], self.pos_confirm[1], post_pause=0.5)
+            time.sleep(1)
             for key in ['4','5','6','7']:
                 for _ in range(6):
                     if not self.running: break
                     pydirectinput.press(key); time.sleep(1)
         self.digital_bee = 0
+
 
     def scan_bee(self):
         region = self.scan_region
@@ -407,6 +505,8 @@ class RoboBearDefinitive(ctk.CTk):
             results = self.reader.readtext(screenshot)
             for (bbox_int, text, prob) in results:
                 if "digital" in text.lower():
+                    self.send_screenshot_to_discord()
+                    
                     mx = region[0] + (bbox_int[0][0] + bbox_int[2][0]) / 2
                     my = region[1] + (bbox_int[0][1] + bbox_int[2][1]) / 2
                     self.digital_bee = 1
@@ -418,27 +518,27 @@ class RoboBearDefinitive(ctk.CTk):
     def main_loop(self):
         self.log("Ready. Start in 3s...")
         time.sleep(3)
-        
+
+        self.send_screenshot_to_discord()
         while self.running:
             self.fixed_clicks = [self.pos_menu_open] + [self.pos_menu_select] * 3+ [self.pos_menu_start] *2+[self.pos_quest_a]
             self.digital_bee = 0
             self.walk_to_bear_original()
             
             while self.running:
-                self.log(f"Quest A position used = {self.pos_quest_a}")
-                self.log(f"[DEBUG] fixed_clicks contents = {self.fixed_clicks}")   # ← this will show ALL positions being used
+
                 searching_mode = (self.round_counter >= 20)
 
                 if self.running:
                     for pos in self.fixed_clicks:
-                        self.log(f"Clicking on {pos[0]}:{pos[1]}")
+
                         self.action_smooth(pos[0], pos[1], post_pause=0.3)
                         time.sleep(1)
                 time.sleep(1)
-                self.log(self.pos_quest_a)
+
                 time.sleep(1)
                 if self.running and searching_mode:
-                    for i in range(3):
+                    for i in range(6):
                         if not self.running: break
                         bx, by = self.scan_bee()
                         if bx > 0:
@@ -448,15 +548,15 @@ class RoboBearDefinitive(ctk.CTk):
                             self.round_counter = -1
                             break
                         else:
-                            if i < 2:
-                                self.log(f"Refreshing... ({i+1}/3)")
+                            
+                                self.log(f"Refreshing... ({i+1}/5)")
                                 self.action_smooth(self.pos_refresh[0], self.pos_refresh[1], post_pause=0.6)
 
                 time.sleep(0.5)
 
                 if self.running:
-                    self.log("scanning 2  bees...")
-                    self.log(self.digital_bee)
+
+
                     
 
                     if 1==1:
@@ -467,9 +567,9 @@ class RoboBearDefinitive(ctk.CTk):
                             self.digital_bee = 1
                         else:
                             self.action_smooth(self.pos_bee2[0], self.pos_bee2[1], post_pause=0.5)
-                    self.log('Came before it ')
+
                     if self.digital_bee == 0:
-                     self.log('came after if self.digital_bee == 0')
+
                      if 1==1:
                         bx, by = self.scan_bee()
                         if bx > 0:
@@ -484,10 +584,10 @@ class RoboBearDefinitive(ctk.CTk):
                 if self.running and self.round_counter >= 20:
                  if self.digital_bee == 0:
                     
-                    self.log("Resetting via UI clicks...")
+
                     self.action_smooth(self.pos_exit[0], self.pos_exit[1], post_pause=0.5)
                     self.action_smooth(self.pos_confirm[0], self.pos_confirm[1], post_pause=0.5)
-                    self.log("Skipping walk, talking to bear again...")
+
                     time.sleep(3)
                     pydirectinput.press('e')
                     time.sleep(1.5)
@@ -501,7 +601,7 @@ class RoboBearDefinitive(ctk.CTk):
                 self.walk_to_drive_reversed()
                 self.buy_4_different_drives()
                 self.round_counter += 1
-                self.log(f"Round {self.round_counter} done.")
+
                 time.sleep(5)
 
 if __name__ == "__main__":
