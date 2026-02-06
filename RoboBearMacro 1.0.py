@@ -23,7 +23,7 @@ class RoboBearDefinitive(ctk.CTk):
         self.reader = easyocr.Reader(['en'])
         self.running = False
         self.digital_bee = 0
-        self.round_counter = 0
+        self.round_counter = 20
         self.drives_bought = 0
         self.discord_webhook = ""  
         # Configurable positions (same defaults as original)
@@ -487,13 +487,14 @@ class RoboBearDefinitive(ctk.CTk):
 
     def use_drives(self):
         if self.digital_bee == 1 and self.running:
-            self.action_smooth(self.pos_exit[0], self.pos_exit[1], post_pause=0.5)
-            self.action_smooth(self.pos_confirm[0], self.pos_confirm[1], post_pause=0.5)
+
             time.sleep(1)
             for key in ['4','5','6','7']:
                 for _ in range(6):
                     if not self.running: break
                     pydirectinput.press(key); time.sleep(1)
+            self.action_smooth(self.pos_exit[0], self.pos_exit[1], post_pause=0.5)
+            self.action_smooth(self.pos_confirm[0], self.pos_confirm[1], post_pause=0.5)
         self.digital_bee = 0
 
 
