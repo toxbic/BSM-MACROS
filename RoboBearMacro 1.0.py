@@ -23,7 +23,7 @@ class RoboBearDefinitive(ctk.CTk):
         self.reader = easyocr.Reader(['en'])
         self.running = False
         self.digital_bee = 0
-        self.round_counter = 20
+        self.round_counter = 0
         self.drives_bought = 0
         self.discord_webhook = ""  
         # Configurable positions (same defaults as original)
